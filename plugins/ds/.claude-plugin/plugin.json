@@ -1,7 +1,7 @@
 {
   "name": "ds",
-  "version": "0.2.0",
-  "description": "Dev Support workflows for partner ticket triage, API support, certification, credential provisioning, and integration troubleshooting.",
+  "version": "0.3.0",
+"description": "Dev Support workflows for partner ticket triage, API support, certification, credential provisioning, integration troubleshooting, and platform knowledge research.",
   "author": {
     "name": "Dev Support Team",
     "email": "engineering@thanx.com"
@@ -16,7 +16,11 @@
     "credentials",
     "onboarding",
     "sandbox",
-    "loyalty"
+    "loyalty",
+    "keystone",
+    "diagnose",
+    "knowledge-gaps",
+    "notion"
   ],
   "homepage": "https://github.com/thanx/thanx-ds-claude-plugins",
   "license": "MIT"

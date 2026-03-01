@@ -8,6 +8,8 @@ Claude Code plugin for Thanx Dev Support team workflows.
 |---------|-------------|
 | `/ds:triage` | Triage an inbound partner support ticket - classify, apply routing rules, draft response |
 | `/ds:improve` | End-of-session improvement loop - capture learnings, patch commands, compound quality |
+| `/ds:diagnose` | Diagnose a partner integration email - classify type, query docs, generate integration guide |
+| `/ds:ask-keystone` | Research a Thanx platform question using Keystone, publish answer to Notion |
 | `/ds:weekly-status` | Generate sync talking points (Mon/Wed/Fri) or async standup updates (Tue/Thu) from Front, Slack, and Jira |
 
 ## Adding New Commands
