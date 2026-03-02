@@ -1,6 +1,16 @@
 {
   "permissions": {
-    "allow": [],
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run test:*)",
+      "Bash(npm run lint:md)",
+      "Bash(npm run lint:md:fix)",
+      "Bash(npm run validate)",
+      "Bash(claude plugin validate*)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
+    ],
     "deny": [],
     "ask": []
   }
