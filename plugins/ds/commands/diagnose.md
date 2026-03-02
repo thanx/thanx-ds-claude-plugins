@@ -55,6 +55,11 @@ Using the **thanx-docs** MCP server, perform these searches. This is mandatory -
 4. Search for certification requirements
 5. If webhooks, data exports, or other supplementary features were mentioned, search for those too
 
+**If the thanx-docs MCP server is unavailable, errors, or times out:**
+Stop and output "Blocked by docs retrieval" followed by the Discovery
+Questionnaire (see Fallback section below). Do NOT guess endpoint paths,
+auth headers, or certification requirements.
+
 ## Step 4: Generate Integration Guide
 
 Create the guide as a markdown file saved to `.context/diagnoses/[partner-name-slug].md`.
@@ -148,7 +153,13 @@ Group by workflow stage:
 - Suggested scoping call agenda
 - Postman collections: https://docs.thanx.com/overview/api_collections.md
 
-## 8. Contacts
+## 8. Sources
+
+| Document | URL | Retrieved |
+|----------|-----|-----------|
+| [doc title] | [doc URL] | [YYYY-MM-DD] |
+
+## 9. Contacts
 
 - Partnerships: partnerships@thanx.com
 - Developer Support: developer.support@thanx.com
@@ -172,7 +183,7 @@ Save this questionnaire to `.context/diagnoses/[partner-name-slug]-questionnaire
 ## Rules
 
 1. **Always use the thanx-docs MCP server** to verify endpoint paths, headers, and auth details. Do not guess.
-2. **Sanitize partner name slugs** before using in file paths: lowercase, replace spaces/special characters with hyphens, remove path-unsafe characters (`/`, `\\`, `..`), collapse consecutive hyphens, and trim leading/trailing hyphens. Example: "Bosque Brewing Co." becomes `bosque-brewing-co`.
+2. **Sanitize partner name slugs** before using in file paths: lowercase, replace spaces/special characters with hyphens, remove path-unsafe characters (`/`, `\\`, `..`), collapse consecutive hyphens, trim leading/trailing hyphens, and truncate to 50 characters. Example: "Bosque Brewing Co." becomes `bosque-brewing-co`.
 3. If the email mentions capabilities spanning multiple APIs, design the guide with separate tracks per API.
 4. Always recommend starting with sandbox credentials.
 5. Flag any requirements that Thanx may not support in Additional Considerations.
