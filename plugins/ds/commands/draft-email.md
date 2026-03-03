@@ -19,7 +19,7 @@ Draft a professional, technically accurate email response to a partner or mercha
 
 **Optional (inline flags):**
 
-- `--tone <friendly|neutral|firm|executive>` - Override default tone (default: friendly)
+- `--tone <friendly|neutral|firm|executive>` - Override default tone (default: neutral)
 - `--internal` - Draft an internal message (Slack/Jira) instead of a partner email
 
 ---
@@ -37,6 +37,10 @@ Determine the input type:
   the full thread to understand history.
 - **Free-text:** Treat as the raw partner message. Ask the user for the partner
   name if not obvious from the content.
+
+Check for the `--internal` flag. If present, this is an internal message draft
+(Slack or Jira) — skip partner salutation/signoff requirements and follow the
+internal format in Step 5.
 
 Extract from the input:
 
@@ -149,9 +153,12 @@ If any question requires technical verification you can perform:
 Note what you found and what you could not verify. Do NOT present Keystone
 answers about undocumented behavior as confirmed facts.
 
-## Step 5: Draft the Email
+## Step 5: Draft the Message
 
-Using all gathered context, draft the email following this structure:
+Using all gathered context, draft the message. The format depends on whether
+`--internal` is set.
+
+### Partner Email Format (default)
 
 ```text
 Hi [First Name],
@@ -177,11 +184,37 @@ Best,
 [User's name]
 ```
 
+### Internal Message Format (`--internal`)
+
+Use this format for Slack messages, Jira comments, or internal escalations.
+Do not include partner-facing salutations, signoffs, or Front send guidance.
+
+```text
+**[Partner name] — [Topic summary]**
+
+Status: [current technical status]
+Integration type: [if applicable]
+
+Issue summary:
+[1-3 sentence summary of what the partner is experiencing or asking]
+
+Technical findings:
+- [What we know]
+- [What we verified]
+- [What remains uncertain]
+
+Escalation signals: {None / [list signals]}
+
+Requested actions:
+- [ ] [Owner/team]: [specific action needed] — Urgency: [Low/Medium/High]
+- [ ] [Owner/team]: [specific action needed]
+```
+
 ### Drafting Rules
 
 **Tone:**
 
-- Default: Professional, clear, direct — not stiff or corporate
+- Default (`neutral`): Professional, clear, direct — not stiff or corporate
 - If `--tone friendly`: Warmer, more conversational, still precise
 - If `--tone firm`: Shorter sentences, state facts plainly, no hedging
 - If `--tone executive`: Concise, bullet-point-forward, lead with impact/status
@@ -219,6 +252,7 @@ Run this checklist automatically and report results:
 ```text
 Draft Review
 ------------
+Draft type: {Partner email / Internal message}
 Questions addressed: {X of Y} ✅ / ⚠️
 Technical claims verified: {Yes / Partially / No — list unverified}
 Boundary doctrine compliant: {Yes / No — list violations}
@@ -231,6 +265,8 @@ Unverified claims: {None / [list items to verify before sending]}
 
 ## Step 7: Present Final Output
 
+### Partner Email Output
+
 Present to the user:
 
 ```text
@@ -238,7 +274,7 @@ Email Draft
 -----------
 To: [Partner contact name]
 Re: [Subject / topic summary]
-Tone: [friendly / neutral / firm / executive]
+Tone: [neutral / friendly / firm / executive]
 Integration type: [if identified]
 
 ---
@@ -261,8 +297,34 @@ Suggested Actions:
 If the user provides a Front conversation URL, also include:
 
 ```text
-To send this draft:
-  python3 scripts/front-tickets.py --draft <conversation_id> "<message>"
+To send this draft, save it to a file and run:
+  python3 scripts/front-tickets.py --draft <conversation_id> --message-file /path/to/draft.txt
+
+Or pipe it directly:
+  echo "<message>" | python3 scripts/front-tickets.py --draft <conversation_id> --stdin
+```
+
+### Internal Message Output
+
+```text
+Internal Draft
+--------------
+For: [Slack channel / Jira ticket / team]
+Re: [Partner name — topic summary]
+
+---
+
+[Full internal message draft]
+
+---
+
+Draft Review
+------------
+[Review checklist from Step 6]
+
+Suggested Actions:
+- [ ] Review draft for accuracy
+- [ ] {Post to Slack / Add as Jira comment}
 ```
 
 Do not send any message or update any ticket. Present everything for human
