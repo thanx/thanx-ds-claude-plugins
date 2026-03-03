@@ -54,6 +54,10 @@ For each unique rule type identified in Step 2, use Keystone MCP tools to read t
 
 If a rule type's `.rb` file is not found at the expected path, use `search_code` or `find_files` to search the repository for the rule class definition before reporting it as unknown.
 
+5. **Cross-reference Notion documentation**: Use the following Notion pages as additional context for understanding segment patterns and validating descriptions:
+   - [Segment Cookbook – Common Segment Recipes](https://www.notion.so/626b427d63ad44fc97dbee847d304ca4) — common segment patterns, reward state definitions, and time delay guidance
+   - [Comprehensive Segmentation Attributes Guide](https://www.notion.so/153a84ed402480eab6cfe4ba6e65ca18) — full catalog of available segment attributes (membership, purchases, frequency, feedback, rewards, points, tiers, custom tags) with compound examples
+
 This is mandatory - do NOT rely on assumptions about what rule fields mean. Always verify against the source code.
 
 ## Step 4: Translate Rule to Plain English
