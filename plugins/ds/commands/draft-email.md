@@ -302,16 +302,6 @@ Suggested Actions:
 - [ ] Send via Front when approved
 ```
 
-If the user provides a Front conversation URL, also include:
-
-```text
-To create a draft in Front (review before sending):
-  python3 scripts/front-tickets.py --draft <conversation_id> "paste message here"
-
-To send directly:
-  python3 scripts/front-tickets.py --send <conversation_id> "paste message here"
-```
-
 ### Internal Message Output
 
 ```text
@@ -335,5 +325,6 @@ Suggested Actions:
 - [ ] {Post to Slack / Add as Jira comment}
 ```
 
-Do not send any message or update any ticket. Present everything for human
-review and approval.
+Do not send any message, update any ticket, or make any API calls to Front.
+This command is draft-only — present the text for the user to copy and send
+manually. The user handles all Front interactions outside this command.
