@@ -30,6 +30,7 @@ Check for an explicit `--sync` or `--async` flag. If neither is provided, auto-d
 
 - **Monday, Wednesday, Friday** → Sync mode
 - **Tuesday, Thursday** → Async mode
+- **Saturday, Sunday** → Prompt user to specify `--sync` or `--async`
 
 Announce the selected mode:
 
@@ -41,19 +42,14 @@ or
 
 ## Step 2: Gather Front Data
 
-Pull the current state of the Dev Support inbox using Front MCP tools:
+Pull the current state of the Dev Support inbox using Front MCP tools. To avoid rate limit exhaustion (each Front search costs ~40% of the rate limit budget), consolidate into a single broad query and classify results client-side.
 
-1. **Open tickets**: Use `front_search_conversations` to find open conversations in the Dev Support inbox (`inb_ghgim`). For each, capture:
-   - Conversation ID and subject
-   - Partner/merchant name
-   - Last message date and who sent it (partner or DS)
-   - Front tags (API Support, Bug, Certification Process, etc.)
-
-2. **Waiting tickets**: Identify conversations where DS sent the last message and is awaiting a partner response. Note how many days since the last DS reply.
-
-3. **Recently resolved**: Find conversations resolved in the last 2 business days. Capture what was resolved and for which partner.
-
-4. **Escalation signals**: Flag any ticket where:
+1. **Single search**: Use `front_search` to query the Dev Support inbox for all recent conversations. Limit to the 10 most recent open conversations to stay within rate limits.
+2. **Classify results** from the single search into:
+   - **Open tickets**: Conversations still awaiting a DS response. For each, capture conversation ID, subject, partner/merchant name, last message date and sender, and Front tags.
+   - **Waiting tickets**: Conversations where DS sent the last message. Note how many business days since the last DS reply.
+   - **Recently resolved**: Conversations resolved in the last 2 business days. Capture what was resolved and for which partner.
+3. **Escalation signals**: From the classified results, flag any ticket where:
    - Partner has been waiting more than 2 business days for a DS response
    - The conversation has a "Bug" or "Certification Process" tag with no recent activity
    - Multiple follow-ups from the partner without a DS reply
@@ -79,8 +75,9 @@ If Slack MCP tools are unavailable, report this and proceed with the data alread
 Search for relevant Jira activity:
 
 1. Use `jira_search_issues` with JQL to find:
-   - DEVSUPP tickets updated in the last 2 business days: `project = DEVSUPP AND updated >= -2d ORDER BY updated DESC`
-   - BUGS tickets created or updated by DS in the last 2 business days: `project = BUGS AND updated >= -2d AND (reporter in (currentUser()) OR comment ~ "Dev Support") ORDER BY updated DESC`
+   - DEVSUPP tickets updated recently: `project = DEVSUPP AND updated >= -4d ORDER BY updated DESC`
+   - BUGS tickets created or updated by DS recently: `project = BUGS AND updated >= -4d AND (reporter in (currentUser()) OR comment ~ "Dev Support") ORDER BY updated DESC`
+   - **Note:** JQL `-Nd` counts calendar days, not business days. Use `-4d` to over-fetch, then filter results to the last 2 business days during output generation.
 2. For each ticket, capture:
    - Issue key, summary, status, assignee
    - Whether it is blocked or waiting on engineering
@@ -150,7 +147,7 @@ Blockers
 
 **Rules for async output:**
 - Each bullet must reference a specific partner, ticket ID, or Jira key
-- "Yesterday" = last business day (Friday if today is Monday — but async only runs Tue/Thu, so yesterday is always the previous weekday)
+- "Yesterday" = the most recent business day (Mon-Fri), regardless of how async mode was triggered. If today is Tuesday, yesterday is Monday. If `--async` is forced on a Monday, yesterday is Friday.
 - "Today" items should be actionable and specific, not vague ("Investigate Giordanos DEV-7467", not "Work on tickets")
 - Keep it concise — this gets pasted into a Slack thread
 
