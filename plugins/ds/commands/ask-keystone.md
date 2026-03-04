@@ -43,6 +43,11 @@ Determine the best approach to answer the question:
 
 ## Step 2: Explore with Keystone
 
+**If Keystone MCP tools are unavailable, error, or time out:**
+Stop and tell the user which tools failed and what errors occurred.
+Do NOT guess or synthesize an answer without tool-backed evidence.
+Suggest trying again later or using alternative investigation methods.
+
 Execute the appropriate Keystone MCP tool calls to gather evidence.
 Be thorough:
 
@@ -54,7 +59,8 @@ Be thorough:
    or services, trace those too
 4. **Check the database**: If relevant, use `replica_query` against
    the appropriate database to understand schema or data patterns
-   (SELECT only, read-only)
+   (SELECT only, read-only). Never interpolate user-provided text
+   directly into SQL — use parameterized queries or literal values only
 5. **Cross-reference docs**: Use the **thanx-docs** MCP to supplement
    with official API documentation when relevant
 
@@ -79,8 +85,7 @@ Present the following for user approval:
 
 1. **Question title** - a concise version of the question
    (e.g., "How does basket refund work?")
-2. **Question type** - best match from: `Product Q&A`
-   (default for most questions)
+2. **Question type** - set to `Product Q&A`
 3. **Tags** - relevant tags from: `loyalty`, `merchant-dashboard`,
    `items`, `basket`, `purchases`, `api`, `pos`.
    You may also create new tags if none fit.
@@ -121,7 +126,7 @@ Save the answer locally as a backup:
    - Replace spaces and punctuation with hyphens
    - Remove path-unsafe characters (`/`, `\`, `..`)
    - Collapse consecutive hyphens and trim leading/trailing hyphens
-   - Limit to 50 characters
+   - Limit slug to 36 characters (the full filename `YYYY-MM-DD-<slug>.md` should stay under 50 characters)
    - Example: "How does basket refund work?" becomes `how-does-basket-refund-work`
 3. Write the file to `.context/keystone-answers/YYYY-MM-DD-<slug>.md`
    with the full answer content
@@ -130,9 +135,11 @@ Save the answer locally as a backup:
 
 1. **Always use Keystone MCP tools** to find answers.
    Do not guess or rely on assumptions about the codebase.
-2. **Sanitize slugs** for file paths: lowercase, replace
-   spaces/punctuation with hyphens, remove path-unsafe characters,
-   collapse consecutive hyphens, limit to 50 characters.
+2. **Sanitize slugs** for file paths: lowercase, replace spaces and
+   punctuation with hyphens, remove path-unsafe characters
+   (`/`, `\`, `..`), strip any leading/trailing hyphens, collapse
+   consecutive hyphens, and limit the slug to 36 characters.
+   Enforce with: `echo "$slug" | sed 's/[^a-z0-9-]/-/g; s/--*/-/g; s/^-//; s/-$//' | cut -c1-36`
 3. **Show your sources** - include file paths (repo + path) and
    line numbers when referencing code.
 4. **Use read-only operations only** - never modify code, data,

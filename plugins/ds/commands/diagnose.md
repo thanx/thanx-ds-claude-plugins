@@ -43,7 +43,7 @@ Map to one or more types with confidence (HIGH / MEDIUM / LOW):
 3. **Pay-at-Table** (Consumer API subset) - QR-code-based mobile payment where guests scan, view order, pay, earn points
 4. **Partner API** (Partner API) - Backend/server-side: submit purchases, manage users/subscribers, tags, feedback without consumer-facing UX
 
-If ambiguous, list all applicable types ranked by likelihood. If too vague to classify, skip to producing a Discovery Questionnaire (see Step 4 fallback).
+If ambiguous, list all applicable types ranked by likelihood. If too vague to classify, skip Steps 3 and 4 and instead produce a Discovery Questionnaire (see Fallback section below Step 4).
 
 ## Step 3: Query Thanx Documentation
 
@@ -63,6 +63,7 @@ auth headers, or certification requirements.
 ## Step 4: Generate Integration Guide
 
 Create the guide as a markdown file saved to `.context/diagnoses/[partner-name-slug].md`.
+If Partner Name cannot be determined, use `unknown-partner-YYYY-MM-DD` as the slug.
 
 Use this structure:
 
@@ -183,9 +184,14 @@ Save this questionnaire to `.context/diagnoses/[partner-name-slug]-questionnaire
 ## Rules
 
 1. **Always use the thanx-docs MCP server** to verify endpoint paths, headers, and auth details. Do not guess.
-2. **Sanitize partner name slugs** before using in file paths: lowercase, replace spaces/special characters with hyphens, remove path-unsafe characters (`/`, `\\`, `..`), collapse consecutive hyphens, trim leading/trailing hyphens, and truncate to 50 characters. Example: "Bosque Brewing Co." becomes `bosque-brewing-co`.
+2. **Sanitize partner name slugs** before using in file paths: lowercase, replace spaces and
+   punctuation with hyphens, remove path-unsafe characters (`/`, `\\`, `..`), strip any
+   leading/trailing hyphens, collapse consecutive hyphens, and limit to 50 characters.
+   Enforce with: `echo "$slug" | sed 's/[^a-z0-9-]/-/g; s/--*/-/g; s/^-//; s/-$//' | cut -c1-50`
+   Example: "Bosque Brewing Co." becomes `bosque-brewing-co`.
 3. If the email mentions capabilities spanning multiple APIs, design the guide with separate tracks per API.
 4. Always recommend starting with sandbox credentials.
 5. Flag any requirements that Thanx may not support in Additional Considerations.
 6. Create the `.context/diagnoses/` directory if it doesn't exist before saving the file.
-7. Do not send any communication to the partner. Present the guide for human review.
+7. **Redact PII** before writing files to disk: strip personal phone numbers, home addresses, and other contact details not relevant to the integration. Keep business email addresses and company names.
+8. Do not send any communication to the partner. Present the guide for human review.
