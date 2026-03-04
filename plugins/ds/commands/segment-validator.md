@@ -39,8 +39,8 @@ If either component is missing, ask the user to provide both:
 
 Walk the JSON rule tree and list every rule type referenced:
 
-- If the root rule is `compound`, recursively inspect each sub-rule in the `rules` array
-- Record each unique rule type encountered (e.g., `segment`, `purchase`, `membership`, `purchase_count`, `purchase_most_recent`, `reward`, `feedback`, `user_tag`, `point`, `compound`, `dynamic`, `order`, `exclusion`, `special_occasion`, `feedback_most_recent`, `snowflake_query`, `empty`, `purchase_amount`)
+- If the root rule is `compound`, recursively inspect each sub-rule in the `rules` array. If the rule tree exceeds 10 levels of nesting or contains circular references, report this as a structural issue in the INVALID RULE output
+- Record each unique rule type encountered (e.g., `segment`, `purchase`, `membership`, `purchase_count`, `purchase_most_recent`, `reward`, `feedback`, `user_tag`, `point`, `compound`, `dynamic`, `order`, `exclusion`, `special_occasion`, `feedback_most_recent`, `snowflake_query`, `empty`, `purchase_amount`). This list is not exhaustive — if the rule JSON contains a type not listed here, still attempt to read its source from thanx-nucleus before reporting it as unknown
 - Note the compound operators used (`&` for AND, `|` for OR, `-` for EXCEPT)
 
 ## Step 3: Read Rule Source Code from Keystone
@@ -51,12 +51,11 @@ For each unique rule type identified in Step 2, use Keystone MCP tools to read t
 2. **Read the README**: Use `read_file` to read `thanx-nucleus:app/models/target/README.md` for the full targeting DSL documentation
 3. **Check field definitions**: For each field referenced in the rule (e.g., `purchased_at`, `segment`, `state`, `source`), search for its validation and allowed values in `thanx-nucleus:app/classes/target/rule/validator.rb` and `thanx-nucleus:app/classes/target/rule/field_validators.rb`
 4. **Check valid segment values**: If the rule uses `type: "segment"`, read `thanx-nucleus:app/models/segment.rb` to confirm valid segment labels (member, vip, daily, weekly, etc.)
-
-If a rule type's `.rb` file is not found at the expected path, use `search_code` or `find_files` to search the repository for the rule class definition before reporting it as unknown.
-
-5. **Cross-reference Notion documentation**: Use the following Notion pages as additional context for understanding segment patterns and validating descriptions:
+5. **Handle missing rule files**: If a rule type's `.rb` file is not found at the expected path, use `search_code` or `find_files` to search the repository for the rule class definition before reporting it as unknown.
+6. **Cross-reference Notion documentation**: Use the following Notion pages as additional context for understanding segment patterns and validating descriptions:
    - [Segment Cookbook – Common Segment Recipes](https://www.notion.so/626b427d63ad44fc97dbee847d304ca4) — common segment patterns, reward state definitions, and time delay guidance
    - [Comprehensive Segmentation Attributes Guide](https://www.notion.so/153a84ed402480eab6cfe4ba6e65ca18) — full catalog of available segment attributes (membership, purchases, frequency, feedback, rewards, points, tiers, custom tags) with compound examples
+   - If these pages are inaccessible, proceed with validation using only the nucleus source code. The Notion documentation provides additional context but is not required for a valid assessment.
 
 This is mandatory - do NOT rely on assumptions about what rule fields mean. Always verify against the source code.
 
@@ -152,7 +151,7 @@ The rule cannot be validated because it contains structural errors.
 1. **Always use Keystone MCP tools** to read rule source code. Do not guess what fields mean or what values are valid.
 2. **Be precise about operators.** The difference between `gte` and `gt`, or `eq` and `in`, matters for validation accuracy.
 3. **Handle nested compounds.** Rules can be deeply nested - walk the entire tree.
-4. **Check date formats.** Dates in rules use ISO 8601 format. Flag any that look malformed.
+4. **Check date formats.** Validate date values against the field's supported format from source code — ISO 8601 for absolute dates, or relative expressions where explicitly supported by the field. Flag malformed or unsupported formats.
 5. **Do not modify any data.** This command is read-only. Never create, update, or delete segments.
 6. **When uncertain about a field's meaning**, say so and cite the source file where you looked. Do not present uncertain interpretations as fact.
 7. **If Keystone is unavailable**, report that validation could not be completed without Keystone access. Do not attempt to validate rules based on assumptions alone.
