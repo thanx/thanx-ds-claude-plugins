@@ -32,3 +32,6 @@ coverage/
 # Test artifacts
 *.test-results.json
 test-results/
+
+# Command output artifacts
+.context/

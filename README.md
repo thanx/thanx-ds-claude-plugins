@@ -28,6 +28,8 @@ Commands that already exist in the main plugin
 |---------|-------------|
 | `/ds:triage` | Triage an inbound partner support ticket - classify by Front tag, apply routing rules, draft response |
 | `/ds:improve` | End-of-session improvement loop - capture learnings, patch commands, compound quality |
+| `/ds:diagnose` | Diagnose a partner integration email - classify type, query docs, generate integration guide |
+| `/ds:ask-keystone` | Research a Thanx platform question using Keystone, publish answer to Notion |
 
 ### Agents
 
