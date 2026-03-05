@@ -1,6 +1,18 @@
 {
   "permissions": {
-    "allow": [],
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run test:links)",
+      "Bash(npm run test:schema)",
+      "Bash(npm run lint:md)",
+      "Bash(npm run lint:md:fix)",
+      "Bash(npm run validate)",
+      "Bash(claude plugin validate)",
+      "Bash(git status)",
+      "Bash(git diff)",
+      "Bash(git diff --staged)",
+      "Bash(git log --oneline*)"
+    ],
     "deny": [],
     "ask": []
   }

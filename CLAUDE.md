@@ -42,14 +42,46 @@ Commands can use these MCP tools:
 - **Notion:** Documentation search, page creation
 - **Slack:** Channel notifications (gated - draft only, human sends)
 
-## Testing
+## Verification Commands
 
-Run `npm test` before every PR. Tests validate:
+Run before every PR, in this order:
 
-- JSON schema correctness (`.mcp.json`, `plugin.json`, `marketplace.json`)
-- YAML frontmatter presence on commands and agents
-- Markdown structure (title heading, no trailing whitespace, no consecutive blank lines)
-- Link validity (internal and external)
+```bash
+# 1. Markdown lint
+npm run lint:md
+
+# 2. Link validation (internal and external)
+npm run test:links
+
+# 3. Schema + frontmatter validation
+npm test
+
+# 4. Full plugin validation
+npm run validate
+```
+
+```bash
+# Run all checks in order, fail-fast
+npm run lint:md && npm run test:links && npm test && npm run validate
+```
+
+All four must pass. Fix before pushing.
+
+### Common Failures
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| Missing frontmatter | New .md file without YAML header | Add `---\ndescription: ...\n---` |
+| Trailing whitespace | Markdown lint rule MD009 | Run `npm run lint:md:fix` |
+| Broken link | Reference to moved/deleted file | Update the link target |
+| Schema error | Invalid JSON in plugin.json | Check JSON syntax |
+
+## Error Correction Log
+
+When Claude makes a repeated mistake in this repo, add it here.
+
+| Date | Mistake | Correction |
+|------|---------|------------|
 
 ## Versioning
 
