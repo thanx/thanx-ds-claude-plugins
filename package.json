@@ -1,6 +1,6 @@
 {
   "name": "thanx-ds-claude-plugins",
-  "version": "0.3.0",
+"version": "0.4.0",
   "description": "Thanx Dev Support Team - Claude Code Plugin Marketplace",
   "private": true,
   "type": "module",
