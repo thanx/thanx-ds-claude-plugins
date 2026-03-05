@@ -44,7 +44,7 @@ or
 
 Pull the current state of the Dev Support inbox using Front MCP tools. To avoid rate limit exhaustion (each Front search costs ~40% of the rate limit budget), consolidate into a single broad query and classify results client-side.
 
-1. **Single search**: Use `front_search` to query the Dev Support inbox for all recent conversations across all states (open, waiting, resolved). Limit to the 10 most recent conversations to stay within rate limits.
+1. **Single search**: Use `front_search_conversations` to query the Dev Support inbox for all recent conversations across all states (open, waiting, resolved). Limit to the 10 most recent conversations to stay within rate limits.
 2. **Classify results** from the single search into:
    - **Open tickets**: Conversations still awaiting a DS response. For each, capture conversation ID, subject, partner/merchant name, last message date and sender, and Front tags.
    - **Waiting tickets**: Conversations where DS sent the last message. Note how many business days since the last DS reply.
@@ -76,7 +76,7 @@ Search for relevant Jira activity:
 
 1. Use `jira_search_issues` with JQL to find:
    - DEVSUPP tickets updated recently: `project = DEVSUPP AND updated >= -4d ORDER BY updated DESC`
-   - BUGS tickets created or updated by DS recently: `project = BUGS AND updated >= -4d AND (reporter in (currentUser()) OR comment ~ "Dev Support") ORDER BY updated DESC`
+   - BUGS tickets created or updated by DS recently: `project = BUGS AND updated >= -4d AND comment ~ "Dev Support" ORDER BY updated DESC`
    - **Note:** JQL `-Nd` counts calendar days, not business days. Use `-4d` to over-fetch, then filter results to the last 2 business days during output generation.
 2. For each ticket, capture:
    - Issue key, summary, status, assignee
