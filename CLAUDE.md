@@ -76,6 +76,43 @@ All four must pass. Fix before pushing.
 | Broken link | Reference to moved/deleted file | Update the link target |
 | Schema error | Invalid JSON in plugin.json | Check JSON syntax |
 
+## Configuration
+
+**Source of truth:** `plugins/ds/skills/ds-team-config/SKILL.md`
+Update the skill first, then this section and the corresponding command files.
+
+### Manager
+
+| Name | Slack User ID | GitHub |
+|------|---------------|--------|
+| Juliano Coimbra | `U06MDTUHKTP` | `jmcoimbra` |
+
+### Dev Support Team Members
+
+| Name | Role | Slack User ID | GitHub | Jira ID |
+|------|------|---------------|--------|---------|
+| Andre Lunardi | Dev Support Engineer | `U08M3LNK01F` | `adrlunardi` | ALUNARDI |
+| Mateo Francesco Mantovano | Dev Support Engineer | `U07QPK90QDV` | `mantovanoMateo` | MMANTOVANO |
+
+### Slack Channel IDs
+
+| Channel | ID | Used in |
+|---------|-----|---------|
+| `#rnd-dev-supp-internal` | `C08MRK8SXPA` | Internal team channel |
+
+### Jira IDs
+
+| Identifier | Value | Used in |
+|------------|-------|---------|
+| Jira Cloud ID | `7d5d6532-069d-419b-bd1c-d8321b134435` | All Jira commands |
+| OPS project key | `OPS` | Dev Support tickets |
+| BUGS project key | `BUGS` | Bug tickets |
+| DEVSUPP project key | `DEVSUPP` | Dev Support requests |
+
+**Update protocol:** When any value changes, update this table first,
+then update each file listed in the "Used in" column.
+Run `grep` across `plugins/` for the old value to catch missed references.
+
 ## Error Correction Log
 
 When Claude makes a repeated mistake in this repo, add it here.
