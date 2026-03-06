@@ -76,6 +76,13 @@ All four must pass. Fix before pushing.
 | Broken link | Reference to moved/deleted file | Update the link target |
 | Schema error | Invalid JSON in plugin.json | Check JSON syntax |
 
+## Configuration
+
+**Source of truth:** `plugins/ds/skills/ds-team-config/SKILL.md`
+
+All team roster data, Slack channel IDs, and Jira config live in the skill file.
+Update the skill first, then update any hardcoded values in command files.
+
 ## Error Correction Log
 
 When Claude makes a repeated mistake in this repo, add it here.
