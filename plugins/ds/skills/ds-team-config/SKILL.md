@@ -17,7 +17,7 @@ instead of hardcoding values.
 
 **Engineering Manager:** Juliano Coimbra (`U06MDTUHKTP`, GitHub: `jmcoimbra`)
 
-**Team Slack IDs (for filtering):** `U08M3LNK01F`, `U07QPK90QDV`
+**Team Slack IDs (for filtering, excludes manager):** `U08M3LNK01F`, `U07QPK90QDV`
 
 ## Slack Channels
 
@@ -43,3 +43,4 @@ instead of hardcoding values.
 | Keystone | Internal knowledge search, Datadog logs, Sentry issues, Snowflake queries |
 | Thanx Docs | API documentation search |
 | Jira | Bug tracking (BUGS-*), dev support requests (DEVSUPP-*) |
+
