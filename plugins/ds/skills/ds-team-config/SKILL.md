@@ -12,12 +12,12 @@ instead of hardcoding values.
 
 | Name | Slack ID | Role | GitHub | Jira ID |
 |------|----------|------|--------|---------|
-| Andre Lunardi | `U08M3LNK01F` | Dev Support Engineer | `adrlunardi` | ALUNARDI |
-| Mateo Francesco Mantovano | `U07QPK90QDV` | Dev Support Engineer | `mantovanoMateo` | MMANTOVANO |
+| Andre Lunardi | `U08M3LNK01F` | Dev Support Engineer | `adrlunardi` | `ALUNARDI` |
+| Mateo Francesco Mantovano | `U07QPK90QDV` | Dev Support Engineer | `mantovanoMateo` | `MMANTOVANO` |
 
 **Engineering Manager:** Juliano Coimbra (`U06MDTUHKTP`, GitHub: `jmcoimbra`)
 
-**Team Slack IDs (for filtering, excludes manager):** `U08M3LNK01F`, `U07QPK90QDV`
+**IC Slack IDs (for filtering):** `U08M3LNK01F`, `U07QPK90QDV`
 
 ## Slack Channels
 
@@ -43,4 +43,3 @@ instead of hardcoding values.
 | Keystone | Internal knowledge search, Datadog logs, Sentry issues, Snowflake queries |
 | Thanx Docs | API documentation search |
 | Jira | Bug tracking (BUGS-*), dev support requests (DEVSUPP-*) |
-
