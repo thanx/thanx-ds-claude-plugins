@@ -6,15 +6,15 @@
   },
   "metadata": {
     "description": "Internal Claude Code plugin marketplace for Thanx Dev Support team - partner integration support, API certification, troubleshooting, and developer enablement workflows",
-    "version": "0.1.0",
+    "version": "0.4.0",
     "pluginRoot": "./plugins"
   },
   "plugins": [
     {
       "name": "ds",
       "source": "./plugins/ds",
-      "description": "Dev Support workflows for partner ticket triage, API support, certification, credential provisioning, and integration troubleshooting",
-      "version": "0.1.0",
+      "description": "Dev Support workflows for partner ticket triage, API support, certification, credential provisioning, integration troubleshooting, and platform knowledge research.",
+      "version": "0.4.0",
       "author": {
         "name": "Dev Support Team",
         "email": "engineering@thanx.com"
