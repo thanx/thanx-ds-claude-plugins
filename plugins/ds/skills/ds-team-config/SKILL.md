@@ -10,12 +10,12 @@ instead of hardcoding values.
 
 ## Team Roster
 
-| Name | Slack ID | Role | GitHub |
-|------|----------|------|--------|
-| Andre Lunardi | `U08M3LNK01F` | Dev Support Engineer | `adrlunardi` |
-| Mateo Francesco Mantovano | `U07QPK90QDV` | Dev Support Engineer | `mantovanoMateo` |
+| Name | Slack ID | Role | GitHub | Jira ID |
+|------|----------|------|--------|---------|
+| Andre Lunardi | `U08M3LNK01F` | Dev Support Engineer | `adrlunardi` | ALUNARDI |
+| Mateo Francesco Mantovano | `U07QPK90QDV` | Dev Support Engineer | `mantovanoMateo` | MMANTOVANO |
 
-**Engineering Manager:** Juliano Coimbra (`U06MDTUHKTP`)
+**Engineering Manager:** Juliano Coimbra (`U06MDTUHKTP`, GitHub: `jmcoimbra`)
 
 **Team Slack IDs (for filtering):** `U08M3LNK01F`, `U07QPK90QDV`
 
@@ -24,7 +24,7 @@ instead of hardcoding values.
 | Channel | ID | Type |
 |---------|-----|------|
 | `#rnd-dev-supp-internal` | `C08MRK8SXPA` | Internal - team coordination and discussions |
-| `#developer-support-tickets` | | Front bot ticket notifications |
+| `#developer-support-tickets` | `C01J28JKMGV` | Front bot ticket notifications |
 
 ## Jira Configuration
 
