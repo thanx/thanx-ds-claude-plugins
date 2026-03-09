@@ -30,6 +30,8 @@ Commands that already exist in the main plugin
 | `/ds:improve` | End-of-session improvement loop - capture learnings, patch commands, compound quality |
 | `/ds:diagnose` | Diagnose a partner integration email - classify type, query docs, generate integration guide |
 | `/ds:ask-keystone` | Research a Thanx platform question using Keystone, publish answer to Notion |
+| `/ds:merchant-offboarder` | Guide the full merchant offboarding process - app store removal, admin deactivation, BReact cleanup |
+| `/ds:certify` | Validate a partner integration against Thanx API docs using DataDog sandbox traces |
 
 ### Agents
 
