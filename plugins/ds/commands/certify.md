@@ -1,27 +1,31 @@
 ---
-description: Validate a partner integration against Thanx API documentation using DataDog sandbox traces and generate a certification report.
+description: Validate a partner integration against Thanx API documentation using DataDog sandbox traces and logs, then generate a certification report.
 ---
 
 # Certify Partner Integration
 
 Validate a partner's API integration by pulling their actual API calls from DataDog
-sandbox traces and checking each one against the official Thanx documentation. The
-partner provides the endpoints they use and their credentials — the command finds
-the real requests in DataDog, verifies headers, payloads, and field mappings against
-thanx-docs MCP, and generates a certification report with PASS/FAIL per check and
-remediation steps.
+sandbox and checking each one against the official Thanx documentation. The user
+provides the partner's merchant handle and the endpoints under review. The command
+uses DataDog spans to discover calls and filter by merchant, then DataDog logs to
+get the full request params for validation against thanx-docs MCP. Generates a
+certification report with PASS/FAIL per check and remediation steps.
 
 ## Usage
 
 ```bash
-/ds:certify <partner> <endpoints_and_credentials>
+/ds:certify <partner> <merchant_handle> <endpoints>
 ```
 
 **Required:**
 - `partner` — Partner name or Front/Jira URL with certification context
-- `endpoints_and_credentials` — List of API endpoints the partner uses and the
-  credentials (API key, OAuth client ID, or merchant identifier) they authenticate
-  with, so we can find their calls in DataDog
+- `merchant_handle` — The merchant handle in DataDog (e.g., `skytabpone`). This is
+  the resolved merchant identity used by Thanx internally — NOT the raw Merchant-Key
+  or API key. DataDog stores the resolved handle in `@merchant.handle`, not the raw
+  credential. If the user provides a raw Merchant-Key instead, tell them you need the
+  merchant handle and explain why.
+- `endpoints` — List of API endpoints the partner uses (e.g., `/api/baskets`,
+  `/api/account`)
 
 **Optional (inline flags):**
 - `--type <integration_type>` — Override integration type detection
@@ -50,10 +54,11 @@ Determine the partner and collect integration context:
 If Front or Jira MCP tools are unavailable or return an error, tell the user which
 tool failed and ask them to paste the relevant details. Do not guess.
 
-**Credential handling:** The partner credentials provided (API key, OAuth client ID,
-merchant ID) are used to query DataDog for their API calls. Redact all credentials
-in the certification report and any partner-facing output. Replace with `[REDACTED]`.
-Never include real credentials in emails or tracking updates.
+**Merchant handle:** The `merchant_handle` is used to filter DataDog spans via
+`@merchant.handle`. This is NOT the raw Merchant-Key header value — DataDog resolves
+the key server-side and stores only the handle (e.g., `skytabpone`) and merchant ID.
+If the user provides a raw API key or Merchant-Key, explain that DataDog cannot
+filter by raw keys and ask for the merchant handle instead.
 
 **Re-certification mode:** If `--recheck` is provided, read the prior certification
 report at the given path. Extract the list of previously failed and passed checks.
@@ -70,8 +75,8 @@ Integration:    [type — Native Ordering / Loyalty API / Consumer UX / POS / et
 POS Partner:    [if applicable]
 Ordering:       [if applicable]
 Certification:  [first / re-certification]
-Credentials:    [REDACTED — type only: API key / OAuth client / merchant ID]
-Endpoints:      [list of endpoints the partner says they use]
+Merchant Handle: [handle used for DataDog filtering]
+Endpoints:      [list of endpoints under review]
 Environment:    Sandbox
 ```
 
@@ -79,40 +84,74 @@ If integration type is unknown, stop and ask the user before proceeding.
 
 ## Step 2: Pull Actual API Calls from DataDog
 
-Using the partner's credentials and endpoint list, query DataDog to find their
-actual API requests in the **sandbox environment**.
+DataDog stores two complementary data sources. Both are needed for full validation:
 
-Use Keystone DataDog MCP tools:
+- **Spans** — contain merchant handle, HTTP status code, API version (from
+  `resource_name`, e.g., `Api::V1::Baskets`), user-agent, and timestamps. Used for
+  **discovery and filtering** by merchant.
+- **Logs** — contain the full `params` object (all request body fields, values,
+  nested objects) plus status code and timestamps. Used for **payload validation**.
+- **Neither source stores raw request headers** (Merchant-Key, Accept-Version,
+  Content-Type). Headers are inferred — see Step 4a.
 
-1. **`datadog_spans`** — Search for API request spans matching the partner's
-   credentials or client identifier. Filter by:
-   - Service name and **sandbox environment tag**
-   - Endpoint path (from the endpoints list)
-   - Time range (default: last 7 days, max 30 days via `--days` flag)
-   - Partner identifier (API key, client ID, or merchant ID in request attributes)
-   - **Limit: 10 most recent spans per endpoint** (mix of successful and error
-     responses to get representative coverage)
+### 2a: Query Spans (Discovery)
 
-2. **`datadog_logs`** — If spans do not contain full request/response detail,
-   search logs for the same time range and partner identifiers in sandbox.
+Use `datadog_spans` to find the partner's API calls:
 
-**Query budget: max 2 DataDog queries per endpoint** (1 span + 1 log if needed).
-For a partner with 10 endpoints, that is max 20 DataDog queries total.
+```
+datadog_spans(
+  query: "resource_name:*[endpoint]* env:sandbox @merchant.handle:[handle]",
+  from: "now-[days]d",
+  to: "now",
+  limit: 10
+)
+```
 
-**Deduplication:** Before proceeding to validation, group the returned API calls
-by endpoint + request body structure. For each unique group, keep one representative
-call and note the count of matching calls. This prevents validating 200 identical
-requests individually.
+From each span, capture:
+- `resource_name` — includes API version (e.g., `Api::V1::Baskets POST /baskets`)
+- `http.status_code` — response status
+- `http.method` — HTTP method
+- `http.url` — endpoint path
+- `merchant.handle` and `merchant.id` — confirms correct merchant
+- `http.request.headers.user-agent` — client SDK/tool
+- Timestamps — for cross-referencing with logs
 
-For each unique API call shape, capture:
+**Limit: 10 spans per endpoint.** Mix of successful and error responses.
 
-- HTTP method and full URL path
-- Request headers (Accept-Version, Content-Type, Authorization scheme)
-- Request body (fields, values, structure)
-- Response status code
-- Response body (if available in traces)
-- Timestamp of the representative call
-- Count of matching calls in the time range
+### 2b: Query Logs (Payload Detail)
+
+Use `datadog_logs` to get the full request params:
+
+```
+datadog_logs(
+  query: "service:thanx-olo env:sandbox [endpoint path]",
+  from: "[start timestamp from spans]",
+  to: "[end timestamp from spans]",
+  limit: 10
+)
+```
+
+Logs contain a JSON `message` field with:
+- `method`, `path` — endpoint info
+- `status` — HTTP response code
+- `params` — **full request body** including all fields, values, nested objects
+  (e.g., `id`, `state`, `subtotal`, `items`, `modifiers`, `rewards`, `payments`)
+- `duration`, `db`, `view` — performance data
+- `datetime` — timestamp
+
+**Important:** Logs cannot be filtered by merchant handle. Use timestamps from the
+span results to narrow the time window and match logs to the correct merchant's
+calls. If multiple merchants are hitting the same endpoint in the same window,
+cross-reference the log `params` (e.g., basket ID patterns) with what you expect
+from the partner.
+
+**Query budget: max 2 DataDog queries per endpoint** (1 span + 1 log).
+
+### 2c: Deduplication
+
+Before proceeding to validation, group the returned API calls by endpoint + request
+body structure. For each unique group, keep one representative call and note the
+count of matching calls. This prevents validating 200 identical requests.
 
 Organize into a numbered list:
 
@@ -120,10 +159,11 @@ Organize into a numbered list:
 API CALLS FOUND IN DATADOG (SANDBOX)
 ─────────────────────────────────────
 1. [METHOD] [endpoint] — [timestamp] ([N] matching calls)
-   Status:  [response code]
-   Headers: [key headers]
-   Body fields: [list of fields sent]
-   Response: [summary]
+   API Version: [from span resource_name, e.g., V1]
+   Status:      [response code]
+   User-Agent:  [from span]
+   Params:      [key fields from log params]
+   Duration:    [from log]
 
 2. [METHOD] [endpoint] — [timestamp] ([N] matching calls)
    ...
@@ -140,7 +180,7 @@ partner-provided samples, not verified from DataDog traces` so the reviewer know
 the evidence quality is lower.
 
 **If no traces are found for any endpoint**, report this to the user — the partner
-may not have started testing yet, or the credentials may be wrong.
+may not have started testing yet, or the merchant handle may be wrong.
 
 ## Step 3: Fetch Documentation for Each Endpoint
 
@@ -183,41 +223,48 @@ from Step 3. Run these checks:
 
 ### 4a: Authentication and Headers
 
-| Check | What to Validate |
+DataDog does not store raw request headers. Use inference rules:
+
+| Check | How to Validate |
 |---|---|
-| Auth type | Correct auth method (OAuth client credentials, API key, bearer token) |
-| Auth flow | Token request uses correct grant type and scopes |
-| Accept-Version | Correct API version header present |
-| Content-Type | `application/json` or as required by endpoint |
-| Required headers | All required headers present |
+| Auth (Merchant-Key) | **Inferred from spans.** If `merchant.handle` is present and status is not 401, auth succeeded. Mark as PASS (inferred). If status is 401, auth failed — mark FAIL. |
+| API version | **From span `resource_name`.** Extract version from controller name (e.g., `Api::V1::Baskets` = V1). Compare against docs. |
+| Content-Type | **Inferred.** If `params` were parsed correctly in logs (JSON fields present), Content-Type was valid. Mark as PASS (inferred). |
+| Accept-Version | **Cannot be verified directly.** Infer from the API version in `resource_name`. Note as "inferred from server routing" in the report. |
+
+Mark inferred checks as `[PASS — inferred]` in the report so the reviewer knows
+these were not directly observed.
 
 ### 4b: Endpoint and Method
 
 | Check | What to Validate |
 |---|---|
-| URL path | Correct endpoint path, correct resource IDs |
-| HTTP method | Correct method (POST vs PUT vs PATCH) |
+| URL path | Correct endpoint path (from spans and logs) |
+| HTTP method | Correct method — from span `http.method` and log `method` |
 | URL parameters | Required query params present, correct format |
 
 ### 4c: Request Body
 
+**This is the primary validation — use log `params` data.**
+
 | Check | What to Validate |
 |---|---|
-| Required fields | All required fields present per docs |
+| Required fields | All required fields present per docs (check log `params` keys) |
 | Field names | Correct field names (no typos, correct casing) |
 | Field types | Correct types (string vs integer vs array) |
 | Field values | Values match expected format (ISO dates, valid enums, etc.) |
+| State transitions | For baskets: correct lifecycle (`checkout` → `placed` → `billed` → `completed`) |
 | Points accrual field | Correct field used — `subtotal` not `amount` (common mistake) |
-| Nested objects | Correct nesting structure for complex fields (items, payments) |
+| Nested objects | Correct nesting structure for complex fields (items, payments, modifiers) |
 | Extra fields | Any fields sent that are not in the docs (may be ignored or cause errors) |
 
 ### 4d: Response Handling
 
 | Check | What to Validate |
 |---|---|
-| Error rate | What percentage of requests return 4xx/5xx |
-| Common errors | Recurring error patterns (same error repeated) |
-| Retry behavior | Are they retrying failed requests appropriately |
+| Error rate | What percentage of requests return 4xx/5xx (from spans) |
+| Common errors | Recurring error patterns — same status code repeated (from spans) |
+| Retry behavior | Are they retrying failed requests appropriately (from span timestamps) |
 
 ### 4e: Integration-Type-Specific Checks
 
@@ -226,26 +273,28 @@ Based on the integration type from Step 1, apply additional checks:
 | Integration Type | Additional Checks |
 |---|---|
 | Loyalty API Direct | No orders expected (only purchases). Refund clawback does NOT happen automatically. |
-| POS / Kiosk | Provider ticket lifecycle (checkout then billed). Payment amount calculation. |
+| POS / Kiosk | Provider ticket lifecycle (checkout then billed). Payment amount calculation. Check log `params.state` values. |
 | Consumer UX | Auth flow for end users. Reward exchange flow. Bonus points activation delay (~20 min). |
 | Native Ordering | Order creation flow. Menu sync if applicable. |
 
 ### 4f: Call Sequencing
 
-Verify the API calls in DataDog follow the correct order:
+Verify the API calls in DataDog follow the correct order (use timestamps from logs):
 
 - Authentication before any data calls
 - User lookup/creation before purchases
-- Purchase creation before reward checks
+- Basket state transitions: `checkout` → `placed` → `billed` → `completed`
 - Proper webhook registration if event-driven
 
 For each check, assign a result:
 
-- **PASS** — Matches documentation
+- **PASS** — Matches documentation (directly verified from DataDog data)
+- **PASS (inferred)** — Cannot be directly observed but inferred from successful
+  responses (used for headers only)
 - **FAIL** — Does not match documentation (include expected vs actual from DataDog)
 - **WARNING** — Not wrong but could cause issues (e.g., deprecated field, missing
   optional but recommended field, high error rate)
-- **INSUFFICIENT DATA** — DataDog trace did not contain enough detail to validate
+- **INSUFFICIENT DATA** — DataDog trace/log did not contain enough detail to validate
 
 ## Step 5: Generate Certification Report
 
@@ -256,8 +305,8 @@ longer than 20 characters, OAuth secrets). If any are found, replace with
 
 Determine the overall result using these deterministic criteria:
 
-- **CERTIFIED** — All checks PASS (warnings allowed, no FAIL or INSUFFICIENT on
-  required endpoints)
+- **CERTIFIED** — All checks PASS or PASS (inferred). Warnings allowed. No FAIL or
+  INSUFFICIENT on required endpoints.
 - **NOT CERTIFIED** — Any check is FAIL on any endpoint
 - **INCOMPLETE** — No FAIL results, but any required endpoint has INSUFFICIENT DATA
   or was not found in DataDog
@@ -274,14 +323,17 @@ Integration:    [type]
 Date:           [today's date]
 Mode:           [first certification / re-certification]
 Environment:    Sandbox
+Merchant:       [handle]
 DataDog range:  [date range searched]
 Calls analyzed: [N unique shapes from N total calls]
+Data sources:   Spans (merchant filter, status codes, API version) +
+                Logs (request params, field values)
 ────────────────────
 
 SUMMARY
 ───────
 Total checks:   [N]
-Passed:         [N]
+Passed:         [N] ([M] inferred)
 Failed:         [N]
 Warnings:       [N]
 Insufficient:   [N]
@@ -293,15 +345,17 @@ DETAILED RESULTS
 ────────────────
 
 1. Authentication and Headers
-   [PASS/FAIL/WARNING/?] Auth type: [result]
-   [PASS/FAIL/WARNING/?] Accept-Version: [result]
-   [PASS/FAIL/WARNING/?] Content-Type: [result]
+   [PASS — inferred] Auth: merchant.handle resolved, no 401s
+   [PASS — inferred] API Version: V1 (from resource_name: Api::V1::*)
+   [PASS — inferred] Content-Type: params parsed successfully
    ...
 
 2. Endpoint: [METHOD] [path] ([N] calls in period)
+   API Version: [from span resource_name]
    Representative call: [timestamp]
    [PASS/FAIL/WARNING/?] Required fields: [result]
    [PASS/FAIL/WARNING/?] Field mapping: [result]
+   [PASS/FAIL/WARNING/?] State transitions: [result]
    [PASS/FAIL/WARNING/?] Points accrual: [result]
    ...
    Documentation reference: [doc page or section from SearchThanx]
@@ -317,7 +371,7 @@ FAILURES — REMEDIATION REQUIRED
 
 F1: [check name]
     Endpoint:     [METHOD] [path]
-    DataDog found: [what the partner actually sent]
+    DataDog found: [what the partner actually sent — from log params]
     Docs expect:   [what the documentation says]
     Fix:           [specific remediation — field name, value, format]
     Doc ref:       [documentation reference]
@@ -351,9 +405,9 @@ for future `--recheck` reference.
 Based on the certification result, draft the appropriate communication.
 
 **Internal details guardrail:** Never include DataDog trace IDs, internal service
-names, Keystone code search results, internal repo paths, or system architecture
-details in the partner-facing email. Reference only what the partner sent and what
-the docs expect.
+names, merchant handles, Keystone code search results, internal repo paths, or
+system architecture details in the partner-facing email. Reference only what the
+partner sent and what the docs expect.
 
 ### CERTIFIED — Confirmation Email
 
@@ -433,27 +487,36 @@ and which still need work.
    knowledge, or Keystone code alone.
 2. **If thanx-docs MCP is unavailable, stop.** Do not proceed with certification
    without documentation verification. Tell the user and suggest retrying later.
-3. **DataDog evidence is preferred.** Use `datadog_spans` and `datadog_logs` to find
-   the partner's actual API calls in sandbox. If DataDog MCP tools are unavailable,
-   accept manual samples as a fallback but mark the result as PARTIAL.
+3. **DataDog spans + logs are complementary.** Spans provide merchant filtering,
+   status codes, and API version. Logs provide full request params for field
+   validation. Always query both. If DataDog MCP tools are unavailable, accept
+   manual samples as a fallback but mark the result as PARTIAL.
 4. **Always filter DataDog to sandbox environment.** Certification is validated
    against sandbox traces only. Never pull production traces for certification.
 5. **Max 20 SearchThanx queries + 5 Keystone queries** in Step 3. Max 2 DataDog
    queries per endpoint in Step 2. Limit results to 10 spans per endpoint.
-6. **Keystone answers on undocumented behavior need engineering verification.** Flag
+6. **Headers are inferred, not directly observed.** DataDog does not store raw
+   request headers. Auth is inferred from merchant handle resolution + non-401
+   status. API version is extracted from span `resource_name`. Content-Type is
+   inferred from successful param parsing. Mark all header checks as "inferred"
+   in the report.
+7. **Merchant handle is required, not raw API keys.** DataDog resolves Merchant-Key
+   to `merchant.handle` server-side. The raw key is not searchable. If the user
+   provides a raw key, ask for the merchant handle instead.
+8. **Keystone answers on undocumented behavior need engineering verification.** Flag
    as needing verification before including in the certification result. Never quote
    or paraphrase Keystone code in any output.
-7. **Redact all credentials and internal details.** Never include API keys, bearer
-   tokens, DataDog trace IDs, internal service names, or system architecture in
-   partner-facing output. Run a pre-output verification scan for credential patterns.
-8. **Apply boundary doctrine on every communication.** Provide specific remediation
-   steps but do not extend scope beyond what was submitted for certification.
-9. **Deterministic certification criteria.** Any FAIL = NOT CERTIFIED. Any
-   INSUFFICIENT on required endpoint = INCOMPLETE. All PASS = CERTIFIED. Manual
-   samples only = PARTIAL.
-10. **`--days` flag maximum is 30.** If the user provides a value over 30, cap it
+9. **Redact all credentials and internal details.** Never include API keys, bearer
+   tokens, merchant handles, DataDog trace IDs, internal service names, or system
+   architecture in partner-facing output. Run a pre-output verification scan.
+10. **Apply boundary doctrine on every communication.** Provide specific remediation
+    steps but do not extend scope beyond what was submitted for certification.
+11. **Deterministic certification criteria.** Any FAIL = NOT CERTIFIED. Any
+    INSUFFICIENT on required endpoint = INCOMPLETE. All PASS (including inferred) =
+    CERTIFIED. Manual samples only = PARTIAL.
+12. **`--days` flag maximum is 30.** If the user provides a value over 30, cap it
     at 30 and inform them.
-11. **Knowledge base files are optional.** If `partners/[name].md`, `knowledge/*.md`,
+13. **Knowledge base files are optional.** If `partners/[name].md`, `knowledge/*.md`,
     or other Second Brain files do not exist, skip them silently and continue.
-12. **Do not send any email, update any ticket, or post to Slack.** Present
+14. **Do not send any email, update any ticket, or post to Slack.** Present
     everything for human review and approval.
