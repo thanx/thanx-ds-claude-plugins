@@ -268,15 +268,29 @@ D2. Schemes deleted:
 
 The asset catalog uses a capitalized handle. Capitalize the first letter of the handle to form the folder name (e.g., "sourdough" → "Sourdough").
 
+First, verify the directory exists:
+
+```bash
+ls -d {repo_path}/ios/mobile/Assets/{Handle}.xcassets 2>/dev/null
+```
+
+If found, report the path and delete it:
+
 ```bash
 rm -rf {repo_path}/ios/mobile/Assets/{Handle}.xcassets
 ```
 
-If the directory does not exist, try a case-insensitive search under `ios/mobile/Assets/` for any `.xcassets` folder matching the handle. Report the result.
+If the directory does not exist, try a case-insensitive search under `ios/mobile/Assets/` for any `.xcassets` folder matching the handle. Report what was found and deleted, or that no asset catalog was found.
 
 ### D4. Delete Google Services Plist Files (automated)
 
-Delete all environment variants:
+First, list which plist files exist for the handle:
+
+```bash
+ls {repo_path}/ios/mobile/Config/GoogleService/GoogleService-Info-{handle}-*.plist 2>/dev/null
+```
+
+Then delete all environment variants that were found:
 
 ```bash
 rm -f {repo_path}/ios/mobile/Config/GoogleService/GoogleService-Info-{handle}-development.plist
@@ -291,12 +305,14 @@ Report which files existed and were deleted, and which were not found.
 
 Read `{repo_path}/ios/Podfile` and find the line(s) for the merchant's target. The entry may be a single line or a block:
 
-Single line format:
+Single-line format:
+
 ```ruby
 target '{handle}'
 ```
 
 Block format:
+
 ```ruby
 target '{handle}' do
   ...
