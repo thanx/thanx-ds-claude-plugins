@@ -34,8 +34,9 @@ git log --oneline -10
 # Uncommitted work
 git status --short
 
-# Changed files vs main
-git diff origin/main --name-only 2>/dev/null | head -50
+# Changed files vs default branch
+DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+git diff origin/${DEFAULT_BRANCH:-main} --name-only 2>/dev/null | head -50
 
 # Workspace identity
 basename $(pwd)

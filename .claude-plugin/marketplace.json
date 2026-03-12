@@ -27,7 +27,9 @@
         "triage",
         "front",
         "credentials",
-        "onboarding"
+        "onboarding",
+        "handoff",
+        "workspace-transition"
       ]
     }
   ]
