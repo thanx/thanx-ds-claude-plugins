@@ -79,15 +79,20 @@ LIMIT 10
 
 **SQL safety:** Before building the query, strip any character from the
 merchant name that is not a letter, digit, space, hyphen, or apostrophe.
-If the sanitized name is empty or contains unexpected characters, abort and
-ask the user to provide the merchant handle directly. This prevents SQL
-injection and LIKE pattern injection (`%`, `_`).
+If the sanitized name is empty, abort and ask the user to provide the
+merchant handle directly. This prevents SQL injection and LIKE pattern
+injection (`%`, `_`). After sanitizing, escape any remaining apostrophes
+for SQL (`'` → `''`) so names like O'Brien produce valid syntax.
 
 **Disabled merchant check:** If `disabled_at` is not null, warn the user that
 this merchant is disabled and ask whether to proceed — a cert renewal for a
 disabled merchant is likely unnecessary.
 
 **Inactive app check:** If `app_state` is not `active`, warn the user.
+
+**No matches:** If the query returns zero rows, inform the user and ask
+them to provide the merchant handle, Admin merchant URL, and Admin app URL
+manually, or to refine the search term.
 
 **Multiple matches:** If the query returns more than one result, present all
 matches and ask the user to confirm which merchant to proceed with.
@@ -246,9 +251,11 @@ Admin:       {admin_merchant_url}
 App:         {admin_app_url}
 
 Completed:
-  [x] Jira card created: {issue_key}          — or: [ ] Jira card drafted for manual creation
-  [x] Squad message sent to #rnd-apple-pie-internal — or: [ ] Squad message drafted for manual posting
-  [x] Zendesk reply drafted                        — or: [ ] Zendesk reply — not applicable
+  Jira:    created {issue_key} | drafted for manual creation
+  Slack:   sent to #rnd-apple-pie-internal | drafted for manual posting
+  Zendesk: reply drafted | not applicable
+
+Show exactly one status per line based on what actually happened.
 ```
 
 ## Rules
