@@ -112,6 +112,8 @@ manually.
 
 Present the findings and ask the user to confirm before proceeding:
 
+If an app record was found:
+
 ```text
 Merchant Context
 ----------------
@@ -119,7 +121,20 @@ Merchant: {merchant_name}
 Handle:   {handle}
 Admin:    {admin_merchant_url}
 App:      {app_name} ({app_state})
-Admin:    {admin_app_url}
+App URL:  {admin_app_url}
+
+Certificate expires: {expiration_date}
+```
+
+If no app record was found, omit the app lines:
+
+```text
+Merchant Context
+----------------
+Merchant: {merchant_name}
+Handle:   {handle}
+Admin:    {admin_merchant_url}
+App:      No app record found
 
 Certificate expires: {expiration_date}
 ```
@@ -155,6 +170,12 @@ and must be renewed before {Expiration Date}.
 
 **Merchant:** {Admin Merchant URL}
 **App:** {Admin App URL}
+```
+
+If no app record exists, replace the App line in the Jira description:
+
+```text
+**App:** No app record found
 ```
 
 Before creating, present the card content and ask the user for confirmation:
@@ -248,7 +269,7 @@ Apple Pay Certificate Renewal — {Merchant Name}
 Merchant:    {merchant_name} ({handle})
 Certificate: Expires {expiration_date}
 Admin:       {admin_merchant_url}
-App:         {admin_app_url}
+App:         {admin_app_url}  ← or "No app record found" if absent
 
 Completed:
   Jira:    created {issue_key} | drafted for manual creation
