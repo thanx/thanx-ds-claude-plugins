@@ -25,6 +25,7 @@ instead of hardcoding values.
 |---------|-----|------|
 | `#rnd-dev-supp-internal` | `C08MRK8SXPA` | Internal - team coordination and discussions |
 | `#developer-support-tickets` | `C01J28JKMGV` | Front bot ticket notifications |
+| `#rnd-apple-pie-internal` | `C074U1WD4P8` | Apple Pie squad — cert renewals, Apple Pay issues |
 
 ## Jira Configuration
 
@@ -34,6 +35,7 @@ instead of hardcoding values.
 | OPS project key | `OPS` |
 | BUGS project key | `BUGS` |
 | DEVSUPP project key | `DEVSUPP` |
+| APS2 project key | `APS2` |
 
 ## Key Integrations
 
