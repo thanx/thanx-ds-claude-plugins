@@ -33,10 +33,14 @@ git log --oneline -10
 
 # Uncommitted work
 git status --short
+git diff --stat
 
 # Changed files vs default branch
 DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
 git diff origin/${DEFAULT_BRANCH:-main} --name-only 2>/dev/null | head -50
+
+# Commits ahead of default branch
+git rev-list --count origin/${DEFAULT_BRANCH:-main}..HEAD 2>/dev/null || echo 0
 
 # Workspace identity
 basename $(pwd)
@@ -73,7 +77,7 @@ Write to `.context/handoff.md` with this structure:
 ## State
 
 - **Uncommitted changes:** [yes/no + summary]
-- **Commits ahead of main:** [count]
+- **Commits ahead of ${DEFAULT_BRANCH}:** [count from rev-list]
 - **Key files modified:** [list]
 
 ## Context
@@ -103,7 +107,10 @@ If the workspace has uncommitted changes, also output: "Warning: uncommitted cha
 ## Rules
 
 1. Create `.context/` directory if it does not exist: `mkdir -p .context`
-2. If no uncommitted changes and no session context worth capturing, output: "Clean state. No handoff needed." and stop.
+2. If no uncommitted changes and no session context worth capturing:
+   - Remove stale handoff if it exists: `rm -f .context/handoff.md`
+   - Output: "Clean state. No handoff needed."
+   - Stop.
 3. Keep the handoff concise -- the receiving session needs enough to resume, not a full transcript.
 4. Never include sensitive data (API keys, credentials, PII) in the handoff file.
 5. `.context/` should already be in `.gitignore`. If it is not, warn the user.
