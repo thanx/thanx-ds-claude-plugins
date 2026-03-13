@@ -15,7 +15,7 @@ Generate a status update for Dev Support syncs or async standups by pulling live
 **Options:**
 
 - `--sync` - Generate talking points for the live sync call (Mon/Wed/Fri)
-- `--async` - Generate Yesterday / Today / Blockers for the Slack thread (Tue/Thu)
+- `--async` - Generate Yesterday / Today / Waiting on / Blockers for the Slack thread (Tue/Thu)
 - No flag: auto-detect based on the current day of the week
 
 ---
@@ -42,31 +42,34 @@ or
 
 ## Step 2: Gather Front Data
 
-Pull the current state of the Dev Support inbox using Front MCP tools. To avoid rate limit exhaustion (each Front search costs ~40% of the rate limit budget), consolidate into a single broad query and classify results client-side.
+Pull the current state of the Dev Support inbox. If `scripts/front-tickets.py` exists in the current repo, prefer it because it pre-classifies tickets and avoids MCP rate limits; otherwise use the Front MCP fallback.
 
-1. **Single search**: Use `front_search_conversations` to query the Dev Support inbox for all recent conversations across all states (open, waiting, resolved). Limit to the 10 most recent conversations to stay within rate limits.
-2. **Classify results** from the single search into:
+1. **Primary method (script available):** If `scripts/front-tickets.py` exists, run `python3 scripts/front-tickets.py` to get all open, waiting, and recently resolved tickets assigned to the current user. The script groups them by status automatically.
+2. **Fallback method (no script available):** Otherwise use `front_search_conversations` to query the Dev Support inbox. Limit to the 10 most recent conversations to stay within rate limits (~40% per search).
+3. **Classify results** into:
    - **Open tickets**: Conversations still awaiting a DS response. For each, capture conversation ID, subject, partner/merchant name, last message date and sender, and Front tags.
    - **Waiting tickets**: Conversations where DS sent the last message. Note how many business days since the last DS reply.
    - **Recently resolved**: Conversations resolved in the last 2 business days. Capture what was resolved and for which partner.
-3. **Escalation signals**: From the classified results, flag any ticket where:
+4. **Escalation signals**: Flag any ticket where:
    - Partner has been waiting more than 2 business days for a DS response
    - The conversation has a "Bug" or "Certification Process" tag with no recent activity
    - Multiple follow-ups from the partner without a DS reply
 
-If Front MCP tools are unavailable, report this and proceed with Slack and Jira data only.
+If both the Front script and Front MCP tools are unavailable, report this and proceed with Slack and Jira data only.
 
 ## Step 3: Gather Slack Data
 
-Search recent Slack activity relevant to Dev Support:
+Search recent Slack activity in two passes: the user's own messages (to capture work done) and team channel activity (to capture context).
 
-1. Use `slack_search_public_and_private` to find messages in #rnd-dev-supp-internal from the last 2 business days
-2. Look for:
+First, resolve the invoking user's Slack identity. Use `slack_search_users` with the user's name (from their environment or profile) to get their Slack user ID. Cache this for the rest of the command.
+
+1. **User's own messages**: Use `slack_search_public_and_private` with `from:<@{resolved_slack_user_id}> after:<yesterday-start-unix>` sorted by timestamp descending. This surfaces work not captured in Front — PR submissions, offboarding updates, partnership threads, DM coordination with teammates, etc.
+2. **Team channel activity**: Search #rnd-dev-supp-internal from the last 2 business days for:
    - Threads mentioning partner names or ticket IDs from Step 2
    - Engineering responses to escalations
    - Action items assigned to DS members
    - Announcements or process changes affecting the team
-3. Use `slack_read_channel` on #developer-support-tickets for recent emoji status updates (eyes, envelope, checkmark)
+3. **Ticket status channel**: Use `slack_read_channel` on #developer-support-tickets for recent emoji status updates (eyes, envelope, checkmark)
 
 If Slack MCP tools are unavailable, report this and proceed with the data already gathered.
 
@@ -127,25 +130,29 @@ NEWS & UPDATES
 
 ### Async Mode (Tue/Thu)
 
-Generate the standup in Yesterday / Today / Blockers format:
+Generate the standup in Yesterday / Today / Waiting on / Blockers format:
 
 ```text
-Yesterday
+Yesterday ([Day] [M/D]):
 - [Specific action with partner name and ticket reference]
 - [Specific action]
 
-Today
+Today ([Day] [M/D]):
 - [Planned action with partner name and ticket reference]
 - [Planned action]
 
-Blockers
+Waiting on:
+- [Partner/person] — [what you're waiting for and ticket reference]
+- [Partner/person] — [what you're waiting for]
+
+Blockers:
 - [Blocker with context — what's blocking and who can unblock]
 ```
 
 If there are no blockers, write:
 
 ```text
-Blockers
+Blockers:
 - None
 ```
 
@@ -153,21 +160,24 @@ Blockers
 - Each bullet must reference a specific partner, ticket ID, or Jira key
 - "Yesterday" = the most recent business day (Mon-Fri), regardless of how async mode was triggered. If today is Tuesday, yesterday is Monday. If `--async` is forced on a Monday, yesterday is Friday.
 - "Today" items should be actionable and specific, not vague ("Investigate Giordanos DEV-7467", not "Work on tickets")
+- "Waiting on" captures items where the ball is in someone else's court — partner responses, PR reviews, engineering feedback. These are distinct from blockers (which prevent any progress).
 - Keep it concise — this gets pasted into a Slack thread
 
 ## Step 6: Present for Review
 
 Present the generated output to the user:
 
-```text
 Status Update Draft
 -------------------
 Mode: [Sync | Async]
 Sources checked: [Front ✓/✗] [Slack ✓/✗] [Jira ✓/✗]
 Date: [today's date]
 
+```text
 [Generated output from Step 5]
 ```
+
+Only the standup body (Step 5 output) should be inside the code block so the user can copy-paste it directly into Slack. The review metadata stays outside.
 
 If any data source was unavailable, note it:
 
