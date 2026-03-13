@@ -85,9 +85,17 @@ merchant handle directly. This prevents SQL injection and LIKE pattern
 injection (`%`, `_`). After sanitizing, escape any remaining apostrophes
 for SQL (`'` → `''`) so names like O'Brien produce valid syntax.
 
-**Eligibility gate (hard stop):** After the query returns, check these three
-conditions. If ANY fail, **do not proceed** to Steps 3–6. Instead, skip
-straight to the early-exit flow below.
+**No matches:** If the query returns zero rows, inform the user and ask
+them to provide the merchant handle, Admin merchant URL, and Admin app URL
+manually, or to refine the search term.
+
+**Multiple matches:** If the query returns more than one result, present all
+matches and ask the user to confirm which merchant to proceed with.
+
+**Eligibility gate (hard stop):** After you have exactly one confirmed
+merchant/app row (post no-match/multi-match handling), check these three
+conditions on that selected row only. If ANY fail, **do not proceed** to
+Steps 3–6. Instead, skip straight to the early-exit flow below.
 
 1. **Merchant is live:** `disabled_at` must be null. If not null, the merchant
    is disabled.
@@ -118,13 +126,6 @@ Front conversation {conversation_id} moved to resolved.
 ```
 
 Then **stop** — do not continue to Step 3 or beyond.
-
-**No matches:** If the query returns zero rows, inform the user and ask
-them to provide the merchant handle, Admin merchant URL, and Admin app URL
-manually, or to refine the search term.
-
-**Multiple matches:** If the query returns more than one result, present all
-matches and ask the user to confirm which merchant to proceed with.
 
 If a match is found, capture:
 
