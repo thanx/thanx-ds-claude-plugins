@@ -20,7 +20,9 @@
     "keystone",
     "diagnose",
     "knowledge-gaps",
-    "notion"
+    "notion",
+    "handoff",
+    "workspace-transition"
   ],
   "homepage": "https://github.com/thanx/thanx-ds-claude-plugins",
   "license": "MIT"
