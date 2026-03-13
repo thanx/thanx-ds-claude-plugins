@@ -42,10 +42,10 @@ or
 
 ## Step 2: Gather Front Data
 
-Pull the current state of the Dev Support inbox. Prefer the Front script when running inside the Second Brain repo, as it pre-classifies tickets and avoids MCP rate limits.
+Pull the current state of the Dev Support inbox. If `scripts/front-tickets.py` exists in the current repo, prefer it because it pre-classifies tickets and avoids MCP rate limits; otherwise use the Front MCP fallback.
 
-1. **Primary method (Second Brain repo):** Run `python3 scripts/front-tickets.py` to get all open, waiting, and recently resolved tickets assigned to Mateo. The script groups them by status automatically.
-2. **Fallback method (no script available):** Use `front_search_conversations` to query the Dev Support inbox. Limit to the 10 most recent conversations to stay within rate limits (~40% per search).
+1. **Primary method (script available):** If `scripts/front-tickets.py` exists, run `python3 scripts/front-tickets.py` to get all open, waiting, and recently resolved tickets assigned to the current user. The script groups them by status automatically.
+2. **Fallback method (no script available):** Otherwise use `front_search_conversations` to query the Dev Support inbox. Limit to the 10 most recent conversations to stay within rate limits (~40% per search).
 3. **Classify results** into:
    - **Open tickets**: Conversations still awaiting a DS response. For each, capture conversation ID, subject, partner/merchant name, last message date and sender, and Front tags.
    - **Waiting tickets**: Conversations where DS sent the last message. Note how many business days since the last DS reply.
@@ -61,7 +61,9 @@ If both the Front script and Front MCP tools are unavailable, report this and pr
 
 Search recent Slack activity in two passes: the user's own messages (to capture work done) and team channel activity (to capture context).
 
-1. **User's own messages**: Use `slack_search_public_and_private` with `from:<@U07QPK90QDV> after:<yesterday-start-unix>` sorted by timestamp descending. This surfaces work not captured in Front — PR submissions, offboarding updates, partnership threads, DM coordination with teammates, etc.
+First, resolve the invoking user's Slack identity. Use `slack_search_users` with the user's name (from their environment or profile) to get their Slack user ID. Cache this for the rest of the command.
+
+1. **User's own messages**: Use `slack_search_public_and_private` with `from:<@{resolved_slack_user_id}> after:<yesterday-start-unix>` sorted by timestamp descending. This surfaces work not captured in Front — PR submissions, offboarding updates, partnership threads, DM coordination with teammates, etc.
 2. **Team channel activity**: Search #rnd-dev-supp-internal from the last 2 business days for:
    - Threads mentioning partner names or ticket IDs from Step 2
    - Engineering responses to escalations
@@ -165,17 +167,17 @@ Blockers:
 
 Present the generated output to the user:
 
-```text
 Status Update Draft
 -------------------
 Mode: [Sync | Async]
 Sources checked: [Front ✓/✗] [Slack ✓/✗] [Jira ✓/✗]
 Date: [today's date]
 
+```text
 [Generated output from Step 5]
 ```
 
-The entire status update output must be wrapped in a code block so the user can copy-paste it directly into Slack.
+Only the standup body (Step 5 output) should be inside the code block so the user can copy-paste it directly into Slack. The review metadata stays outside.
 
 If any data source was unavailable, note it:
 
